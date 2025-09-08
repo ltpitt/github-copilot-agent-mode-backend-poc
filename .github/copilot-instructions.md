@@ -1,17 +1,19 @@
 # GitHub Copilot Agent Mode Repository Instructions
 
 **Repository**: Spring Boot Mortgage Calculator Backend
+
 ## Purpose
+
 This repository implements a backend REST API for mortgage calculations using Spring Boot. It is designed for use with GitHub Copilot Agent Mode and follows best practices for agent-driven development, build, and validation workflows.
 
 ---
 
 ## 1. Repository Overview
 
-- **Framework**: Spring Boot (Java)  
-- **API Documentation**: OpenAPI (via Springdoc)  
-- **Testing**: JUnit, Mockito  
-- **Build Tool**: Maven (preferred, validated)  
+- **Framework**: Spring Boot (Java)
+- **API Documentation**: OpenAPI (via Springdoc)
+- **Testing**: JUnit, Mockito
+- **Build Tool**: Maven (preferred, validated)
 
 **Directory Structure**:
 ```
@@ -27,38 +29,38 @@ README.md, LICENSE, .github/                       # Metadata and GitHub config
 
 ## 2. Agent Mode: Working Effectively
 
-**Environment Setup**  
-- Java and Maven are pre-configured.  
+**Environment Setup**
+- Java and Maven are pre-configured.
 - No additional setup required for standard workflows.
 
 **Build, Test, and Run Workflows (Maven)**
-- **Build and Compile**  
+- **Build and Compile**
   ```
   ./mvnw clean compile
   ```
   Timing: ~6s (cached), Timeout: ~5+ min (first run)
 
-- **Run Tests**  
+- **Run Tests**
   ```
   ./mvnw test
   ```
   Timing: ~7s (cached), Timeout: ~5+ min (first run)
 
-- **Full Build with Packaging**  
+- **Full Build with Packaging**
   ```
   ./mvnw clean package
   ```
 
-- **Run Application**  
+- **Run Application**
   ```
   ./mvnw spring-boot:run
   ```
 
 **Manual Execution (Validation Required)**  
 After any code change, ALWAYS:
-1. Build the project from scratch  
-2. Run the full test suite  
-3. Start the application and verify logs  
+1. Build the project from scratch
+2. Run the full test suite
+3. Start the application and verify logs
 
 **Complete Maven Validation Workflow**
 ```
@@ -124,41 +126,47 @@ Implement a REST API endpoint for mortgage calculations:
 
 ### Implementation Steps
 
-**Project Setup**  
-- Use Spring Initializr with: Spring Web, Spring Boot DevTools  
+**Project Setup**
+- Use Spring Initializr with: Spring Web, Spring Boot DevTools
 - Group ID: `com.example`, Artifact ID: `mortgage-calculator`
 
-**API Contract**  
-- Define OpenAPI YAML: `src/main/resources/openapi.yaml`  
+**API Contract**
+- Define OpenAPI YAML: `src/main/resources/openapi.yaml`
 - Use OpenAPI Generator Maven plugin if needed
 
-**Business Logic**  
-- Port calculation logic from frontend  
+**Business Logic**
+- Port calculation logic from frontend
 - Implement as a Spring service class
 
-**Mortgage Calculation Formula**  
+**Mortgage Calculation Formula**
 ```
 M = P * (r * (1 + r)^n) / ((1 + r)^n - 1)
 ```
 Where:
-- M = Monthly payment  
-- P = Principal  
-- r = Monthly interest rate (annual / 12 / 100)  
-- n = Total payments (years * 12)  
+- M = Monthly payment
+- P = Principal
+- r = Monthly interest rate (annual / 12 / 100)
+- n = Total payments (years * 12)
 - If interest rate is 0: `M = P / n`
 
-**Max Borrowing Calculation**  
-- Alone: `mainIncome * 4.5`  
-- Together: `(mainIncome + partnerIncome) * 4.5`  
-- Energy label A/B: +5% borrowing capacity
-**REST Endpoint**  
-- `POST /api/mortgage/calculate`  
+**Max Borrowing Calculation**
+- Alone: `mainIncome * 4.5`
+- Together: `(mainIncome + partnerIncome) * 4.5`
+- Energy label adjustment (Dutch 2025 rules):
+    - A/B: add €10,000
+    - C/D: no adjustment
+    - E/F/G: subtract between €5,500 and €30,000 depending on income
+    - This function implements **Dutch 2025 rules** for energy label impact on borrowing capacity.
+
+**REST Endpoint**
+- `POST /api/mortgage/calculate`
 - Use `@RestController`, `@RequestBody`, validation annotations
-**Frontend Integration**  
+
+**Frontend Integration**
 - Frontend should POST to backend and display results
 
-**Testing**  
-- Unit tests: JUnit, Mockito  
+**Testing**
+- Unit tests: JUnit, Mockito
 - Integration tests: Spring Boot Test
 
 **Build and Test Instructions**
@@ -169,22 +177,21 @@ Test: ./mvnw test
 ```
 
 **Coding Standards**
-- Follow Java and Spring Boot best practices  
-- Use OpenAPI annotations  
-- Write unit and integration tests  
+- Follow Java and Spring Boot best practices
+- Use OpenAPI annotations
+- Write unit and integration tests
 - Document code and APIs clearly
 
 **Validation Steps**
-- Test with Postman or cURL  
-- Ensure frontend integration works  
-- All tests must pass  
-- Handle edge cases gracefully  
+- Test with Postman or cURL
+- Ensure frontend integration works
+- All tests must pass
+- Handle edge cases gracefully
 - Use correct HTTP status codes
 
 ---
 
 ## 4. Agent Mode: Critical Timing and Fallback Logic
-
 **Never cancel the following operations**:
 - Maven build/test/package/run: allow up to 5 minutes for first run
 
@@ -198,31 +205,32 @@ Test: ./mvnw test
 ---
 
 ## 5. Repository State Validation
+
 After any code change, ALWAYS:
-- Test build and run from scratch  
-- Verify application starts and outputs correctly  
+- Test build and run from scratch
+- Verify application starts and outputs correctly
 - Never commit broken build configurations
 ---
 
 ## 6. Extending and Troubleshooting
 
-**Adding Docker**  
-- Use `docker build` and `docker run`  
+**Adding Docker**
+- Use `docker build` and `docker run`
 - Document new timeouts
-**.gitignore**  
-- Ensure `target/` is ignored
 
-**Troubleshooting**:
-- If build hangs: wait 5+ minutes  
-- If tests fail: `./mvnw clean test`  
+**.gitignore**
+- Ensure `target/` is ignored
+  **Troubleshooting**:
+- If build hangs: wait 5+ minutes
+- If tests fail: `./mvnw clean test`
 - If app won't run: check JAR name and logs
 ---
 
 ## 7. Key Points for Copilot Agent Mode
 
-- This repository is a Java/Spring Boot backend for mortgage calculations  
-- Maven is the validated and preferred build tool  
-- Never cancel long-running builds/tests on first run  
-- Always validate end-to-end functionality (not just compilation)  
-- Build times are normal on first run due to dependency downloads  
+- This repository is a Java/Spring Boot backend for mortgage calculations
+- Maven is the validated and preferred build tool
+- Never cancel long-running builds/tests on first run
+- Always validate end-to-end functionality (not just compilation)
+- Build times are normal on first run due to dependency downloads
 - Follow these instructions first; only fall back to search/context if incomplete
