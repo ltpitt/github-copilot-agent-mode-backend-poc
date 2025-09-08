@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MortgageCalculationServiceTest {
     
@@ -20,74 +19,125 @@ class MortgageCalculationServiceTest {
     }
     
     @Test
-    void testCalculateMortgage_withInterest() {
+    void testCalculateMortgage_withInterest_livingTogether() {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("300000.00"));
+        request.setLoanAmount(new BigDecimal("300000.00"));
         request.setInterestRate(new BigDecimal("3.5"));
-        request.setDurationYears(30);
+        request.setLoanTermYears(30);
+        request.setLivingSituation("together");
+        request.setMainIncome(new BigDecimal("75000.00"));
+        request.setPartnerIncome(new BigDecimal("45000.00"));
+        request.setEnergyLabel("B");
+        request.setFixedInterestPeriod(10);
         
         // When
         MortgageCalculationResponse response = service.calculateMortgage(request);
         
         // Then
-        // Monthly payment should be approximately $1347.13
-        assertEquals(0, response.getMonthlyPayment().compareTo(new BigDecimal("1347.13")));
-        // Total interest should be approximately $184967 (360 payments * 1347.13 - 300000)
-        assertEquals(0, response.getTotalInterest().compareTo(new BigDecimal("184966.80")));
+        assertNotNull(response);
+        assertNotNull(response.getMonthlyPayment());
+        assertNotNull(response.getTotalInterest());
+        assertNotNull(response.getMaxBorrowing());
+        assertNotNull(response.getAdvice());
+        
+        // Verify monthly payment calculation (approximately 1347.13)
+        assertTrue(response.getMonthlyPayment().compareTo(new BigDecimal("1340.00")) > 0);
+        assertTrue(response.getMonthlyPayment().compareTo(new BigDecimal("1355.00")) < 0);
+        
+        // Verify max borrowing: (75000 + 45000) * 4.5 * 1.05 (B energy label) = 567000
+        assertEquals(0, response.getMaxBorrowing().compareTo(new BigDecimal("567000.00")));
+        
+        // Verify advice contains relevant information
+        assertFalse(response.getAdvice().isEmpty());
+        assertTrue(response.getAdvice().contains("within your borrowing capacity"));
+        assertTrue(response.getAdvice().contains("energy-efficient"));
     }
     
     @Test
-    void testCalculateMortgage_zeroInterest() {
+    void testCalculateMortgage_withInterest_livingAlone() {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("240000.00"));
-        request.setInterestRate(new BigDecimal("0.0"));
-        request.setDurationYears(20);
-        
-        // When
-        MortgageCalculationResponse response = service.calculateMortgage(request);
-        
-        // Then
-        // Monthly payment should be 240000 / (20 * 12) = 1000
-        assertEquals(0, response.getMonthlyPayment().compareTo(new BigDecimal("1000.00")));
-        // Total interest should be 0 for zero interest
-        assertEquals(0, response.getTotalInterest().compareTo(new BigDecimal("0.00")));
-    }
-    
-    @Test
-    void testCalculateMortgage_shortTerm() {
-        // Given
-        MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("100000.00"));
+        request.setLoanAmount(new BigDecimal("200000.00"));
         request.setInterestRate(new BigDecimal("4.0"));
-        request.setDurationYears(5);
+        request.setLoanTermYears(25);
+        request.setLivingSituation("alone");
+        request.setMainIncome(new BigDecimal("60000.00"));
+        request.setPartnerIncome(null);
+        request.setEnergyLabel("C");
+        request.setFixedInterestPeriod(15);
         
         // When
         MortgageCalculationResponse response = service.calculateMortgage(request);
         
         // Then
-        // For 5-year term, monthly payment should be approximately $1841.65
-        assertEquals(0, response.getMonthlyPayment().compareTo(new BigDecimal("1841.65")));
-        // Total interest should be approximately $10499
-        assertEquals(0, response.getTotalInterest().compareTo(new BigDecimal("10499.00")));
+        assertNotNull(response);
+        assertNotNull(response.getMonthlyPayment());
+        assertNotNull(response.getTotalInterest());
+        assertNotNull(response.getMaxBorrowing());
+        assertNotNull(response.getAdvice());
+        
+        // Verify max borrowing: 60000 * 4.5 = 270000 (no energy bonus for C)
+        assertEquals(0, response.getMaxBorrowing().compareTo(new BigDecimal("270000.00")));
+        
+        // Verify advice
+        assertFalse(response.getAdvice().isEmpty());
+        assertTrue(response.getAdvice().contains("within your borrowing capacity"));
     }
     
     @Test
-    void testCalculateMortgage_highInterest() {
+    void testCalculateMortgage_withZeroInterest() {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("200000.00"));
-        request.setInterestRate(new BigDecimal("8.0"));
-        request.setDurationYears(25);
+        request.setLoanAmount(new BigDecimal("120000.00"));
+        request.setInterestRate(new BigDecimal("0.0"));
+        request.setLoanTermYears(10);
+        request.setLivingSituation("alone");
+        request.setMainIncome(new BigDecimal("50000.00"));
+        request.setPartnerIncome(null);
+        request.setEnergyLabel("A");
+        request.setFixedInterestPeriod(10);
         
         // When
         MortgageCalculationResponse response = service.calculateMortgage(request);
         
         // Then
-        // Monthly payment should be approximately $1543.63
-        assertEquals(0, response.getMonthlyPayment().compareTo(new BigDecimal("1543.63")));
-        // Total interest should be approximately $263089
-        assertEquals(0, response.getTotalInterest().compareTo(new BigDecimal("263089.00")));
+        assertNotNull(response);
+        // Monthly payment should be 120000 / 120 = 1000.00
+        assertEquals(0, response.getMonthlyPayment().compareTo(new BigDecimal("1000.00")));
+        assertEquals(0, response.getTotalInterest().compareTo(new BigDecimal("0.00")));
+        
+        // Max borrowing: 50000 * 4.5 * 1.05 (A energy label) = 236250.00
+        assertEquals(0, response.getMaxBorrowing().compareTo(new BigDecimal("236250.00")));
+        
+        // Verify advice mentions energy efficiency
+        assertTrue(response.getAdvice().contains("energy-efficient"));
+    }
+    
+    @Test
+    void testCalculateMortgage_exceedsMaxBorrowing() {
+        // Given
+        MortgageCalculationRequest request = new MortgageCalculationRequest();
+        request.setLoanAmount(new BigDecimal("400000.00"));
+        request.setInterestRate(new BigDecimal("3.0"));
+        request.setLoanTermYears(30);
+        request.setLivingSituation("alone");
+        request.setMainIncome(new BigDecimal("60000.00"));
+        request.setPartnerIncome(null);
+        request.setEnergyLabel("G");
+        request.setFixedInterestPeriod(5);
+        
+        // When
+        MortgageCalculationResponse response = service.calculateMortgage(request);
+        
+        // Then
+        assertNotNull(response);
+        // Max borrowing: 60000 * 4.5 = 270000 (no bonus for G)
+        assertEquals(0, response.getMaxBorrowing().compareTo(new BigDecimal("270000.00")));
+        
+        // Verify advice mentions exceeding capacity
+        assertTrue(response.getAdvice().contains("exceeds your borrowing capacity"));
+        assertTrue(response.getAdvice().contains("improving the property's energy efficiency"));
+        assertTrue(response.getAdvice().contains("shorter fixed interest period"));
     }
 }

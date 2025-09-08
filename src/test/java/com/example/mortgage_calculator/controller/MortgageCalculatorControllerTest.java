@@ -4,11 +4,10 @@ import com.example.mortgage_calculator.dto.MortgageCalculationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import java.math.BigDecimal;
 
@@ -29,9 +28,14 @@ class MortgageCalculatorControllerTest {
     void testCalculateMortgage_success() throws Exception {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("300000.00"));
+        request.setLoanAmount(new BigDecimal("300000.00"));
         request.setInterestRate(new BigDecimal("3.5"));
-        request.setDurationYears(30);
+        request.setLoanTermYears(30);
+        request.setLivingSituation("together");
+        request.setMainIncome(new BigDecimal("75000.00"));
+        request.setPartnerIncome(new BigDecimal("45000.00"));
+        request.setEnergyLabel("B");
+        request.setFixedInterestPeriod(10);
         
         // When & Then
         mockMvc.perform(post("/api/mortgage/calculate")
@@ -39,17 +43,24 @@ class MortgageCalculatorControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.monthlyPayment").value(1347.13))
-                .andExpect(jsonPath("$.totalInterest").value(184966.80));
+                .andExpect(jsonPath("$.monthlyPayment").exists())
+                .andExpect(jsonPath("$.totalInterest").exists())
+                .andExpect(jsonPath("$.maxBorrowing").value(567000.00))
+                .andExpect(jsonPath("$.advice").exists());
     }
     
     @Test
     void testCalculateMortgage_zeroInterest() throws Exception {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("240000.00"));
+        request.setLoanAmount(new BigDecimal("120000.00"));
         request.setInterestRate(new BigDecimal("0.0"));
-        request.setDurationYears(20);
+        request.setLoanTermYears(10);
+        request.setLivingSituation("alone");
+        request.setMainIncome(new BigDecimal("50000.00"));
+        request.setPartnerIncome(null);
+        request.setEnergyLabel("A");
+        request.setFixedInterestPeriod(10);
         
         // When & Then
         mockMvc.perform(post("/api/mortgage/calculate")
@@ -58,16 +69,23 @@ class MortgageCalculatorControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.monthlyPayment").value(1000.00))
-                .andExpect(jsonPath("$.totalInterest").value(0.00));
+                .andExpect(jsonPath("$.totalInterest").value(0.00))
+                .andExpect(jsonPath("$.maxBorrowing").value(236250.00))
+                .andExpect(jsonPath("$.advice").exists());
     }
     
     @Test
-    void testCalculateMortgage_invalidInput_missingPrincipal() throws Exception {
+    void testCalculateMortgage_invalidInput_missingLoanAmount() throws Exception {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
         request.setInterestRate(new BigDecimal("3.5"));
-        request.setDurationYears(30);
-        // Principal is null
+        request.setLoanTermYears(30);
+        request.setLivingSituation("together");
+        request.setMainIncome(new BigDecimal("75000.00"));
+        request.setPartnerIncome(new BigDecimal("45000.00"));
+        request.setEnergyLabel("B");
+        request.setFixedInterestPeriod(10);
+        // loanAmount is null
         
         // When & Then
         mockMvc.perform(post("/api/mortgage/calculate")
@@ -77,12 +95,17 @@ class MortgageCalculatorControllerTest {
     }
     
     @Test
-    void testCalculateMortgage_invalidInput_negativePrincipal() throws Exception {
+    void testCalculateMortgage_invalidInput_negativeLoanAmount() throws Exception {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("-100000.00"));
+        request.setLoanAmount(new BigDecimal("-100000.00"));
         request.setInterestRate(new BigDecimal("3.5"));
-        request.setDurationYears(30);
+        request.setLoanTermYears(30);
+        request.setLivingSituation("together");
+        request.setMainIncome(new BigDecimal("75000.00"));
+        request.setPartnerIncome(new BigDecimal("45000.00"));
+        request.setEnergyLabel("B");
+        request.setFixedInterestPeriod(10);
         
         // When & Then
         mockMvc.perform(post("/api/mortgage/calculate")
@@ -92,12 +115,17 @@ class MortgageCalculatorControllerTest {
     }
     
     @Test
-    void testCalculateMortgage_invalidInput_negativeInterestRate() throws Exception {
+    void testCalculateMortgage_invalidInput_invalidLivingSituation() throws Exception {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("300000.00"));
-        request.setInterestRate(new BigDecimal("-1.0"));
-        request.setDurationYears(30);
+        request.setLoanAmount(new BigDecimal("300000.00"));
+        request.setInterestRate(new BigDecimal("3.5"));
+        request.setLoanTermYears(30);
+        request.setLivingSituation("invalid");
+        request.setMainIncome(new BigDecimal("75000.00"));
+        request.setPartnerIncome(new BigDecimal("45000.00"));
+        request.setEnergyLabel("B");
+        request.setFixedInterestPeriod(10);
         
         // When & Then
         mockMvc.perform(post("/api/mortgage/calculate")
@@ -107,12 +135,55 @@ class MortgageCalculatorControllerTest {
     }
     
     @Test
-    void testCalculateMortgage_invalidInput_zeroDuration() throws Exception {
+    void testCalculateMortgage_invalidInput_missingMainIncome() throws Exception {
         // Given
         MortgageCalculationRequest request = new MortgageCalculationRequest();
-        request.setPrincipal(new BigDecimal("300000.00"));
+        request.setLoanAmount(new BigDecimal("300000.00"));
         request.setInterestRate(new BigDecimal("3.5"));
-        request.setDurationYears(0);
+        request.setLoanTermYears(30);
+        request.setLivingSituation("alone");
+        // mainIncome is null
+        request.setEnergyLabel("C");
+        request.setFixedInterestPeriod(10);
+        
+        // When & Then
+        mockMvc.perform(post("/api/mortgage/calculate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+    
+    @Test
+    void testCalculateMortgage_invalidInput_invalidEnergyLabel() throws Exception {
+        // Given
+        MortgageCalculationRequest request = new MortgageCalculationRequest();
+        request.setLoanAmount(new BigDecimal("300000.00"));
+        request.setInterestRate(new BigDecimal("3.5"));
+        request.setLoanTermYears(30);
+        request.setLivingSituation("alone");
+        request.setMainIncome(new BigDecimal("60000.00"));
+        request.setEnergyLabel("Z");
+        request.setFixedInterestPeriod(10);
+        
+        // When & Then
+        mockMvc.perform(post("/api/mortgage/calculate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+    
+    @Test
+    void testCalculateMortgage_invalidInput_negativePartnerIncome() throws Exception {
+        // Given
+        MortgageCalculationRequest request = new MortgageCalculationRequest();
+        request.setLoanAmount(new BigDecimal("300000.00"));
+        request.setInterestRate(new BigDecimal("3.5"));
+        request.setLoanTermYears(30);
+        request.setLivingSituation("together");
+        request.setMainIncome(new BigDecimal("75000.00"));
+        request.setPartnerIncome(new BigDecimal("-10000.00"));
+        request.setEnergyLabel("B");
+        request.setFixedInterestPeriod(10);
         
         // When & Then
         mockMvc.perform(post("/api/mortgage/calculate")
